@@ -1,15 +1,12 @@
 '''
-db = sqlite3.connect("test.db")
-db.execute("")
-CREATE TABLE tbl (line1 INTEGER PRIMARY KEY,line2 TEXT,line3 TEXT)
-INSERT INTO tbl (line1,line2,line3) values (1,test,114514fish)
-UPDATE tbl SET line2="1919810Kid" WHERE line1="1"
+预提供的
+youdao-appid: 15f45a64cbf74042
+appsecret: iS0Mz8CxDJcgIKkxNdCfMDxITvliKO5e
+文件夹根目录下有已做好的相关db，修改文件名或复制副本即可使用
 
-https://www.w3school.com.cn/python/python_try_except.asp
-
-print("Conn>>Created Words.db",end="\n\n")
-
-youdao_return=youdaoRequest("apple","2827c6145da76315","K73llfrGOr7h4tlK9lbHJsxojaRpSIE4","zh-CHS")#zh-CHS/en
+Author>>Word Automatic translation and testing System
+Author>>Written by Kid-Ocelot
+Author>>Requires Verificated Youdao-app to have best experience
 '''
 
 import sqlite3
@@ -21,13 +18,14 @@ import time
 from importlib import reload
 import json
 import time
+import random
 
 def connect_db(db_input):
     if db_input == "empty":
         db=sqlite3.connect("Words.db")
         db.execute("CREATE TABLE youdao (appID TEXT,appSECRET TEXT,access INTEGER)")
-        db.execute("CREATE TABLE new (CN TEXT,EN TEXT,CN2EN INTEGER DEFAULT(0),EN2CN INTEGER DEFAULT(0))")
-        db.execute("CREATE TABLE prob (CN TEXT,EN TEXT,CN2EN INTEGER DEFAULT(0),EN2CN INTEGER DEFAULT(0))")
+        db.execute("CREATE TABLE new (CN TEXT,EN TEXT,value INTEGER DEFAULT(0))")
+        db.execute("CREATE TABLE prob (CN TEXT,EN TEXT,value INTEGER DEFAULT(0))")
         db.execute("CREATE TABLE fin (CN TEXT,EN TEXT)")
         #db.execute("INSERT INTO youdao (id,appID,appSECRET) values (1,'" + appID + "','" + appSECRET + "')")
         #db.execute("INSERT INTO youdao (id,appID,appSECRET) values (1,'text','text2')")
@@ -45,12 +43,12 @@ def db_verification(db):
         print("Veri>>Table youdao error")
         errors=errors+1
     try:
-        db.execute("SELECT CN,EN,CN2EN,EN2CN from new")
+        db.execute("SELECT CN,EN,value from new")
     except sqlite3.OperationalError:
         print("Veri>>Table new error")
         errors=errors+1
     try:
-        db.execute("SELECT CN,EN,CN2EN,EN2CN from prob")
+        db.execute("SELECT CN,EN,value from prob")
     except sqlite3.OperationalError:
         print("Veri>>Table prob error")
         errors=errors+1
@@ -70,12 +68,12 @@ def mainChoice():
     print("Main>>1:Configure youdao-id")
     print("Main>>2:Translate a given word")
     print("Main>>3:Words Management")
-    print("Main>>4")
-    print("Main>>5")
+    print("Main>>4:Words Testment")
+    print("Main>>5:Words Migration")
     print("Main>>6")
     print("Main>>7")
     print("Main>>8")
-    print("Main>>9")
+    print("Main>>9:Help")
     print("Main>>10:Close the DB")
     sel=str(input("Main>>Operation id:"))
     return sel
@@ -84,6 +82,17 @@ def youdaoGlobalinfoRefresh():
     youdao_appID=db.execute("Select appID from youdao").fetchone()[0]
     youdao_appSECRET=db.execute("Select appSECRET from youdao").fetchone()[0]
     return youdao_appID,youdao_appSECRET
+
+def fetchlist(database,table):#Usage(db,new) Return(Indexs count,Selection)
+    list_=database.execute("SELECT * from "+str(table)).fetchall()
+    recur=0
+    while True:
+            try:
+                list_[recur]
+                recur=recur+1
+            except:
+                break
+    return recur,list_
 
 ###################################youdao-request copied from ai.youdao.com (modified)
 def youdaoRequest(q,APP_KEY,APP_SECRET,destni_lang="en"):
@@ -143,7 +152,7 @@ def youdaoRequest(q,APP_KEY,APP_SECRET,destni_lang="en"):
     youdao_return=youdao_return.decode()
     youdao_return=json.loads(youdao_return)
     return youdao_return["translation"][0],youdao_return["errorCode"],youdao_return
-#################################################youdao-request
+#################################################youdao-request########Define part ends
 print("""
 Author>>Word Automatic translation and testing System
 Author>>Written by Kid-Ocelot
@@ -152,8 +161,8 @@ Author>>Requires Verificated Youdao-app to have best experience
 
 db_int_sel=str(input("Conn>>1:Connect;2.Create:"))
 if db_int_sel=="1":
-    #db=connect_db(str(input("Name of db:")))
-    db=connect_db("Words.db")#Fast testment,Changing later
+    db=connect_db(str(input("Name of db:")))
+    #db=connect_db("Words.db")#Fast testment,Changing later
 else:
     db=connect_db("empty")
     print("Conn>>Created Words.db",end="\n\n")
@@ -186,8 +195,11 @@ while True:
             if youdao_veri!=1:
                 print("Youdao>>Cleared current info.")
                 db.execute("Delete from youdao")
-            db.execute("Insert into youdao (appID,appSECRET) values ('"+youdao_res_appID+"','"+youdao_res_appSECRET+"')")
-            db.execute("UPDATE youdao SET access=0")
+                db.execute("INSERT into youdao(access) values(0)")
+
+            db.execute("Update youdao Set appID='"+youdao_res_appID+"',appSECRET='"+youdao_res_appSECRET+"'")
+            #db.execute("Insert into youdao (appID,appSECRET) values ('"+youdao_res_appID+"','"+youdao_res_appSECRET+"')")
+            #db.execute("UPDATE youdao SET access=0")
             print("Youdao>>Sucessfully inserted the new info.",end="\n\n")
             db.commit()
         if youdao_sel_main=="2":
@@ -281,7 +293,7 @@ while True:
                 while True:
                     mana_char_cn=str(input("Manage>>Input>>Insert CN character"))
                     if mana_char_cn=="":
-                        print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="/n/n")
+                        print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="\n\n")
                         break
                     else:
                         mana_char_en=str(youdaoRequest(mana_char_cn,youdao_appID,youdao_appSECRET,"en")[0])
@@ -294,18 +306,18 @@ while True:
                     mana_char_cn=str(input("Manage>>Input>>Insert CN character"))
                     mana_char_en=str(input("Manage>>Input>>Insert EN character"))
                     if mana_char_cn=="" or mana_char_en=="":
-                        print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="/n/n")
+                        print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="\n\n")
                         break
                     else:
-                        db.execute("Insert into new(CN,EN) values('"+mana_char_cn+"','"+mana_char_en+"')")#en2cn
+                        db.execute("Insert into new(CN,EN) values('"+mana_char_cn+"','"+mana_char_en+"')")
                         print("Manage>>Input>>Successfully Inserted  "+mana_char_cn+" , "+mana_char_en,end="\n\n")
                         mana_count=mana_count+1
-            if mana_sel_Input_method=="2" and mana_sel_Input_preference=="2" and mana_sel_Input_youdao=="1":
+            if mana_sel_Input_method=="2" and mana_sel_Input_preference=="2" and mana_sel_Input_youdao=="1":#e
                 mana_count=0
                 while True:
                     mana_char_en=str(input("Manage>>Input>>Insert EN character"))
                     if mana_char_en=="":
-                        print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="/n/n")
+                        print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="\n\n")
                         break
                     else:
                         mana_char_cn=str(youdaoRequest(mana_char_en,youdao_appID,youdao_appSECRET,"zh-CHS")[0])
@@ -318,7 +330,7 @@ while True:
                         mana_char_cn=str(input("Manage>>Input>>Insert CN character"))
                         mana_char_en=str(input("Manage>>Input>>Insert EN character"))
                         if mana_char_cn=="" or mana_char_en=="":
-                            print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="/n/n")
+                            print("Manage>>Input>>Exited inputing mode with "+str(mana_count)+" word(s) inserted.",end="\n\n")
                             break
                         else:
                             db.execute("Insert into new(CN,EN) values('"+mana_char_cn+"','"+mana_char_en+"')")
@@ -326,47 +338,201 @@ while True:
                             mana_count=mana_count+1
             db.commit()
         if mana_sel_main=="2":#View tables
-            mana_view_tuple=db.execute("SELECT CN,EN from new").fetchall()#new
-            #递归-Recursion
-            mana_recur_int=0
-            while True:
-                try:
-                    mana_view_tuple[mana_recur_int]
-                    mana_recur_int=mana_recur_int+1
-                except:
-                    break
+            mana_view_tuple=fetchlist(db,"new")[1]
+            mana_recur_int=fetchlist(db,"new")[0]
             print("Manage>>View>>",mana_recur_int,"word(s) found in Table new.")
             for i in range(0,mana_recur_int,1):
-                print("Manage>>View>>Table new: CN:",mana_view_tuple[i][0],", EN:",mana_view_tuple[i][1])
+                print("Manage>>View>>Table new: CN:",mana_view_tuple[i][0],", EN:",mana_view_tuple[i][1],", Rank:",mana_view_tuple[i][2])
             print()#\n
-
-            mana_view_tuple=db.execute("SELECT CN,EN from prob").fetchall()#prob
-            #递归-Recursion
-            mana_recur_int=0
-            while True:
-                try:
-                    mana_view_tuple[mana_recur_int]
-                    mana_recur_int=mana_recur_int+1
-                except:
-                    break
+            
+            mana_view_tuple=fetchlist(db,"prob")[1]
+            mana_recur_int=fetchlist(db,"prob")[0]
             print("Manage>>View>>",mana_recur_int,"word(s) found in Table prob.")
             for i in range(0,mana_recur_int,1):
-                print("Manage>>View>>Table new: CN:",mana_view_tuple[i][0],", EN:",mana_view_tuple[i][1])
+                print("Manage>>View>>Table new: CN:",mana_view_tuple[i][0],", EN:",mana_view_tuple[i][1],", Rank:",mana_view_tuple[i][2])
             print()#\n
-
-            mana_view_tuple=db.execute("SELECT CN,EN from fin").fetchall()#fin
-            #递归-Recursion
-            mana_recur_int=0
-            while True:
-                try:
-                    mana_view_tuple[mana_recur_int]
-                    mana_recur_int=mana_recur_int+1
-                except:
-                    break
+            
+            mana_view_tuple=fetchlist(db,"fin")[1]
+            mana_recur_int=fetchlist(db,"fin")[0]
             print("Manage>>View>>",mana_recur_int,"word(s) found in Table fin.")
             for i in range(0,mana_recur_int,1):
                 print("Manage>>View>>Table new: CN:",mana_view_tuple[i][0],", EN:",mana_view_tuple[i][1])
             print()#\n
+    if sel=="4":#Do tests
+        print("Tests>>Entered Testment Mode,Input nothing/ENTER to exit.")
+        test_sel_main=str(input("Tests>>Decide lists: 1:Only table New 2:Only Table Prob:"))
+        test_success=0#Init
+        test_failure=0#Init
+        if test_sel_main!="2":#New
+            test_count=fetchlist(db,"new")[0]
+            if test_count>0:
+                while True:
+                    test_list=fetchlist(db,"new")[1]
+                    test_random_1=int(random.randint(0,test_count-1))
+                    test_req=""
+                    try:
+                        test_req=test_list[test_random_1]
+                    except:
+                        print("Tests>>An error occurred.",end="\n\n")
+                        break
+                    test_answer_EN=str(input("Tests>>Translate "+str(test_req[0])+" to English."))
+                    if test_answer_EN=="":
+                        print("Tests>>Exited with "+str(test_success)+" success(s) and "+str(test_failure)+" failure(s).")
+                        break
+                    if test_answer_EN==str(test_req[1]):
+                        test_success=test_success+1
+                        db.execute("UPDATE new SET value="+str(test_req[2]+1)+" WHERE CN='"+test_req[0]+"'")#Success=>+1
+                        db.commit()
+                        print("Test>>Success.",end="\n\n")
+                    else:
+                        test_failure=test_failure+1
+                        db.execute("UPDATE new SET value="+str(test_req[2]-1)+" WHERE CN='"+test_req[0]+"'")#Fail=>-1
+                        db.commit()
+                        print("Test>>Failure. The correct answer is "+str(test_req[1])+" .",end="\n\n")
+                    db.commit()
+            else:
+                print("Tests>>Exited for no words in Table new",end="\n\n")
+
+                
+        if test_sel_main=="2":#Prob
+            test_count=fetchlist(db,"prob")[0]
+            if test_count>0:
+                while True:
+                    test_list=fetchlist(db,"prob")[1]
+                    test_random_1=int(random.randint(0,test_count-1))
+                    test_req=""
+                    try:
+                        test_req=test_list[test_random_1]
+                    except:
+                        print("Tests>>An error occurred.",end="\n\n")
+                        break
+                    test_answer_EN=str(input("Tests>>Translate "+str(test_req[0])+" to English."))
+                    if test_answer_EN=="":
+                        print("Tests>>Exited with "+str(test_success)+" success(s) and "+str(test_failure)+" failure(s).")
+                        break
+                    if test_answer_EN==str(test_req[1]):
+                        test_success=test_success+1
+                        db.execute("UPDATE prob SET value="+str(test_req[2]+1)+" WHERE CN='"+test_req[0]+"'")#Success=>+1
+                        db.commit()
+                        print("Test>>Success.",end="\n\n")
+                    else:
+                        test_failure=test_failure+1
+                        db.execute("UPDATE prob SET value="+str(test_req[2]-1)+" WHERE CN='"+test_req[0]+"'")#Fail=>-1
+                        db.commit()
+                        print("Test>>Failure. The correct answer is "+str(test_req[1])+" .",end="\n\n")
+                    db.commit()
+            else:
+                print("Tests>>Exited for no words in Table prob",end="\n\n")
+    if sel=="5":#Migration
+        mig_count=0
+        mig_list_new=fetchlist(db,"new")
+        mig_list_prob=fetchlist(db,"prob")
+        mig_list_fin=fetchlist(db,"fin")
+        mig_sel=str(input("Mig>>Select 'from'. 1:new>prob 2.new>fin 3:prob>new:"))##Guideline
+        if mig_sel=="1":#new>>prob
+            #Copied from View
+            mig_mana_view_tuple=fetchlist(db,"new")[1]
+            mig_mana_recur_int=fetchlist(db,"new")[0]
+            print("Mig>>View>>",mig_mana_recur_int,"word(s) found in Table new.")
+            for i in range(0,mig_mana_recur_int,1):
+                print("Mig>>View>>Table new: CN:",mig_mana_view_tuple[i][0],", EN:",mig_mana_view_tuple[i][1],"Count:",mig_mana_view_tuple[i][2])
+            print()#\n
+            
+            mig_mana_view_tuple=fetchlist(db,"prob")[1]
+            mig_mana_recur_int=fetchlist(db,"prob")[0]
+            print("Mig>>View>>",mig_mana_recur_int,"word(s) found in Table prob.")
+            for i in range(0,mig_mana_recur_int,1):
+                print("Mig>>View>>Table prob: CN:",mig_mana_view_tuple[i][0],", EN:",mig_mana_view_tuple[i][1],"Count:",mig_mana_view_tuple[i][2])
+            print()#\n
+            
+            mig_1_sel=int(input("Mig>>Select 'Count' max value. Eg:Select 3 => Any Entries with 'Count' <=3 will be chosen."))
+            for i in range(0,mig_list_new[0],1):
+                if mig_list_new[1][i][2]<=mig_1_sel:
+                    db.execute("DELETE FROM new WHERE en = '"+mig_list_new[1][i][1]+"'")
+                    db.execute("INSERT INTO prob (cn,en,value) values ('"+mig_list_new[1][i][0]+"','"+mig_list_new[1][i][1]+"',"+str(mig_list_new[1][i][2])+")")
+                    print("Mig>>Migrated ",mig_list_new[1][i])
+                    mig_count=mig_count+1
+            print("Mig>>Migrated ",mig_count,"word(s).",end="\n\n")
+
+        
+        if mig_sel=="2":#new>>fin
+            mig_mana_view_tuple=fetchlist(db,"new")[1]
+            mig_mana_recur_int=fetchlist(db,"new")[0]
+            print("Mig>>View>>",mig_mana_recur_int,"word(s) found in Table new.")
+            for i in range(0,mig_mana_recur_int,1):
+                print("Mig>>View>>Table new: CN:",mig_mana_view_tuple[i][0],", EN:",mig_mana_view_tuple[i][1],"Count:",mig_mana_view_tuple[i][2])
+            print()#\n
+            
+            mig_mana_view_tuple=fetchlist(db,"fin")[1]
+            mig_mana_recur_int=fetchlist(db,"fin")[0]
+            print("Mig>>View>>",mig_mana_recur_int,"word(s) found in Table fin.")
+            for i in range(0,mig_mana_recur_int,1):
+                print("Mig>>View>>Table fin: CN:",mig_mana_view_tuple[i][0],", EN:",mig_mana_view_tuple[i][1])
+            print()#\n
+            
+            mig_2_sel=int(input("Mig>>Select 'Count' min value. Eg:Select 3 => Any Entries with 'Count' >=3 will be chosen."))
+            for i in range(0,mig_list_new[0],1):
+                if mig_list_new[1][i][2]>=mig_2_sel:
+                    db.execute("DELETE FROM new WHERE en = '"+mig_list_new[1][i][1]+"'")
+                    db.execute("INSERT INTO fin (cn,en) values ('"+mig_list_new[1][i][0]+"','"+mig_list_new[1][i][1]+"')")
+                    print("Mig>>Migrated ",mig_list_new[1][i])
+                    mig_count=mig_count+1
+            print("Mig>>Migrated ",mig_count,"word(s).",end="\n\n")
+
+        if mig_sel=="3":#prob>>new
+            #Copied from View
+            mig_mana_view_tuple=fetchlist(db,"prob")[1]
+            mig_mana_recur_int=fetchlist(db,"prob")[0]
+            print("Mig>>View>>",mig_mana_recur_int,"word(s) found in Table prob.")
+            for i in range(0,mig_mana_recur_int,1):
+                print("Mig>>View>>Table prob: CN:",mig_mana_view_tuple[i][0],", EN:",mig_mana_view_tuple[i][1],"Count:",mig_mana_view_tuple[i][2])
+            print()#\n
+            
+            mig_mana_view_tuple=fetchlist(db,"new")[1]
+            mig_mana_recur_int=fetchlist(db,"new")[0]
+            print("Mig>>View>>",mig_mana_recur_int,"word(s) found in Table new.")
+            for i in range(0,mig_mana_recur_int,1):
+                print("Mig>>View>>Table new: CN:",mig_mana_view_tuple[i][0],", EN:",mig_mana_view_tuple[i][1],"Count:",mig_mana_view_tuple[i][2])
+            print()#\n
+            
+            mig_3_sel=int(input("Mig>>Select 'Count' min value. Eg:Select 3 => Any Entries with 'Count' >=3 will be chosen."))
+            for i in range(0,mig_list_prob[0],1):
+                if mig_list_prob[1][i][2]>=mig_3_sel:
+                    db.execute("DELETE FROM prob WHERE en = '"+mig_list_prob[1][i][1]+"'")
+                    db.execute("INSERT INTO new (cn,en,value) values ('"+mig_list_prob[1][i][0]+"','"+mig_list_prob[1][i][1]+"',"+str(mig_list_prob[1][i][2])+")")
+                    print("Mig>>Migrated ",mig_list_prob[1][i])
+                    mig_count=mig_count+1
+            print("Mig>>Migrated ",mig_count,"word(s).",end="\n\n")
+
+    if sel=="9":#Help
+        print("Help>>1:关于Youdao-id与翻译")
+        print("Help>>2:关于数据库")
+        help_sel_main=str(input("Help>>选择捏:"))
+        if help_sel_main=="1":
+            print("Help>>有道id是去ai.youdao.com进行一个带文本翻译api的app的申请")
+            print("Help>>并且将其中的appid与appsecret进行一个Main>>Youdao>>New>>那边的输入")
+            print("Help>>然后主界面的Appid/secMissing就会变成Not verified")
+            print("Help>>然后再到Main>>Youdao>>3:Verificate>>那边进行一个验证可用性")
+            print("Help>>这样之后 Words management>>Add中的有道自动填充就可用了")
+            print("Help>>并且同时main>>2的翻译也可用了")
+            print("Help>>芜湖芜湖！！",end="\n\n")
+        if help_sel_main=="2":
+            print("Help>>数据库嘛，有4个表")
+            print("Help>>分别是youdao,new,prob,fin")
+            print("Help>>youdao表里存了1 entry的appid与appsec")
+            print("Help>>new和prob表里存了若干entries的CN,EN,value")
+            print("Help>>CN代表了中文解释，EN代表英文词条，value代表在Main>>Test>里的成绩")
+            print("Help>>这个value基准为0，text每错一次-1,对一次+1")
+            print("Help>>fin表里存了Cn,en")
+            print("Help>>为什么没有Value？ 你都背熟了还考什么试")
+            print("Help>>通过Main>>Migrate也可以发现 fin表只进不出")
+            print("Help>>然后在一开始导入数据库的时候 我在下面def了一个db_verification")
+            print("Help>>校验表的列是不是足够 符合标准")
+            print("Help>>虽然校验的有点草率 但是至少校验了（（（")
+            print("Help>>主要依靠数据库提供的功能就是单词存取，测试与迁移")
+            print("Help>>看心情再做一个csv导入？")
+            print("Help>>这个不一定做，可能会咕咕（",end="\n\n")
+            
     if sel=="10":
         db.commit()
         db.close()
